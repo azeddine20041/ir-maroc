@@ -1,13 +1,1670 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <title>Simulateur Fiscal IR Maroc 2026 - CGI & LF 2025/2026</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM UMD CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/react@18/umd/react.production.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel Standalone for JSX compilation -->
+    <script src="https://cdn.jsdelivr.net/npm/@babel/standalone/babel.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #FEFCE8;
+      }
+      /* Custom print styles for pay slip modal */
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        #printable-payslip, #printable-payslip * {
+          visibility: visible;
+        }
+        #printable-payslip {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        .print\:hidden {
+          display: none !important;
+        }
+      }
+    </style>
   </head>
-  <body>
+  <body class="bg-[#FEFCE8] text-black min-h-screen">
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+
+    <script type="text/babel">
+      const { useState, useEffect, useMemo } = React;
+
+      // --- SVG ICONS COMPONENTS ---
+      const Icons = {
+        Calculator: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/></svg>,
+        FileText: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/></svg>,
+        Sparkles: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg>,
+        TrendingUp: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>,
+        Building: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>,
+        Award: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>,
+        CheckCircle: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
+        X: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+        Printer: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>,
+        Download: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>,
+        Send: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><line x1="22" x2="11" y1="2" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>,
+        User: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
+        Bot: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 8V4H8"/><rect width="16" height="12" x="4" y="8" rx="2"/><path d="M2 14h2"/><path d="M20 14h2"/><path d="M15 13v2"/><path d="M9 13v2"/></svg>,
+        AlertCircle: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>,
+        ChevronDown: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m6 9 6 6 6-6"/></svg>,
+        ChevronUp: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="m18 15-6-6-6 6"/></svg>,
+        RefreshCw: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>,
+        ShieldCheck: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>,
+        HelpCircle: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" x2="12.01" y1="17" y2="17"/></svg>,
+        BookOpen: (p) => <svg viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round" {...p}><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      };
+
+      // --- BAREMES & TAX LOGIC ---
+      const BAREME_2026 = [
+        { min: 0, max: 40000, rate: 0.0, deduction: 0, monthlyMin: 0, monthlyMax: 3333.33, monthlyDeduction: 0 },
+        { min: 40001, max: 60000, rate: 0.10, deduction: 4000, monthlyMin: 3333.34, monthlyMax: 5000.00, monthlyDeduction: 333.33 },
+        { min: 60001, max: 80000, rate: 0.20, deduction: 10000, monthlyMin: 5000.01, monthlyMax: 6666.67, monthlyDeduction: 833.33 },
+        { min: 80001, max: 100000, rate: 0.30, deduction: 18000, monthlyMin: 6666.68, monthlyMax: 8333.33, monthlyDeduction: 1500.00 },
+        { min: 100001, max: 180000, rate: 0.34, deduction: 22000, monthlyMin: 8333.34, monthlyMax: 15000.00, monthlyDeduction: 1833.33 },
+        { min: 180001, max: null, rate: 0.37, deduction: 27400, monthlyMin: 15000.01, monthlyMax: null, monthlyDeduction: 2283.33 },
+      ];
+
+      const BAREME_2024 = [
+        { min: 0, max: 30000, rate: 0.0, deduction: 0, monthlyMin: 0, monthlyMax: 2500.00, monthlyDeduction: 0 },
+        { min: 30001, max: 50000, rate: 0.10, deduction: 3000, monthlyMin: 2500.01, monthlyMax: 4166.67, monthlyDeduction: 250.00 },
+        { min: 50001, max: 60000, rate: 0.20, deduction: 8000, monthlyMin: 4166.68, monthlyMax: 5000.00, monthlyDeduction: 666.67 },
+        { min: 60001, max: 80000, rate: 0.30, deduction: 14000, monthlyMin: 5000.01, monthlyMax: 6666.67, monthlyDeduction: 1166.67 },
+        { min: 80001, max: 180000, rate: 0.34, deduction: 17200, monthlyMin: 6666.68, monthlyMax: 15000.00, monthlyDeduction: 1433.33 },
+        { min: 180001, max: null, rate: 0.38, deduction: 24400, monthlyMin: 15000.01, monthlyMax: null, monthlyDeduction: 2033.33 },
+      ];
+
+      function calculateSalaryTax(input) {
+        const {
+          baseSalary = 0,
+          seniorityBonus = 0,
+          otherBonuses = 0,
+          exemptAllowances = 0,
+          familyDependents = 0,
+          housingLoanInterest = 0,
+          isSocialHousing = false,
+          cimrRate = 0,
+          professionType = "standard",
+          taxYear = "2026",
+        } = input;
+
+        const salaryBrut = baseSalary + seniorityBonus + otherBonuses + exemptAllowances;
+        const salaryBrutImposable = Math.max(0, salaryBrut - exemptAllowances);
+
+        const cnssBase = Math.min(salaryBrutImposable, 6000);
+        const cnssContribution = cnssBase * 0.0448;
+        const amoContribution = salaryBrutImposable * 0.0226;
+        const cimrContribution = salaryBrutImposable * (cimrRate / 100);
+
+        let fpRate = 0.25;
+        let fpCapMonthly = 2916.67;
+
+        if (professionType === "voyageur") {
+          fpRate = 0.45;
+          fpCapMonthly = 4166.67;
+        } else if (professionType === "enseignant" || professionType === "journaliste") {
+          fpRate = 0.45;
+          fpCapMonthly = 2916.67;
+        } else {
+          const sbiAnnual = salaryBrutImposable * 12;
+          if (sbiAnnual <= 78000) {
+            fpRate = 0.35;
+          } else {
+            fpRate = 0.25;
+          }
+        }
+
+        const calculatedFraisPro = salaryBrutImposable * fpRate;
+        const fraisProfessionnels = Math.min(calculatedFraisPro, fpCapMonthly);
+
+        let housingDeduction = 0;
+        if (housingLoanInterest > 0) {
+          if (isSocialHousing) {
+            housingDeduction = housingLoanInterest;
+          } else {
+            const maxTenPercent = salaryBrutImposable * 0.10;
+            housingDeduction = Math.min(housingLoanInterest, maxTenPercent);
+          }
+        }
+
+        const totalDeductionsFromSBI = cnssContribution + amoContribution + cimrContribution + fraisProfessionnels + housingDeduction;
+        const salaryNetImposable = Math.max(0, salaryBrutImposable - totalDeductionsFromSBI);
+        const salaryNetImposableAnnual = salaryNetImposable * 12;
+
+        const bareme = taxYear === "2026" ? BAREME_2026 : BAREME_2024;
+        let taxRate = 0;
+        let sumToDeductMonthly = 0;
+        let sumToDeductAnnual = 0;
+
+        for (const bracket of bareme) {
+          if (
+            salaryNetImposable >= bracket.monthlyMin &&
+            (bracket.monthlyMax === null || salaryNetImposable <= bracket.monthlyMax)
+          ) {
+            taxRate = bracket.rate;
+            sumToDeductMonthly = bracket.monthlyDeduction;
+            sumToDeductAnnual = bracket.deduction;
+            break;
+          }
+        }
+
+        const irBrutMonthly = Math.max(0, salaryNetImposable * taxRate - sumToDeductMonthly);
+        const irBrutAnnual = Math.max(0, salaryNetImposableAnnual * taxRate - sumToDeductAnnual);
+
+        const validDependents = Math.min(Math.max(0, familyDependents), 6);
+        const familyDeductionPerPersonMonthly = taxYear === "2026" ? 41.67 : 30.0;
+        const familyDeductionMonthly = validDependents * familyDeductionPerPersonMonthly;
+        const familyDeductionAnnual = validDependents * (taxYear === "2026" ? 500 : 360);
+
+        const irNetMonthly = Math.max(0, irBrutMonthly - familyDeductionMonthly);
+        const irNetAnnual = Math.max(0, irBrutAnnual - familyDeductionAnnual);
+
+        const employeeTotalDeductions = cnssContribution + amoContribution + cimrContribution + irNetMonthly;
+        const salaryNetToPay = salaryBrut - employeeTotalDeductions;
+
+        let netGainVs2024Monthly = undefined;
+        if (taxYear === "2026") {
+          const calc2024 = calculateSalaryTax({ ...input, taxYear: "2024" });
+          netGainVs2024Monthly = Math.max(0, salaryNetToPay - calc2024.salaryNetToPay);
+        }
+
+        return {
+          salaryBrut,
+          salaryBrutImposable,
+          exemptAllowances,
+          cnssContribution,
+          amoContribution,
+          cimrContribution,
+          fraisProfessionnels,
+          housingDeduction,
+          salaryNetImposable,
+          salaryNetImposableAnnual,
+          irBrutMonthly,
+          irBrutAnnual,
+          taxRate,
+          sumToDeductMonthly,
+          familyDeductionMonthly,
+          familyDeductionAnnual,
+          irNetMonthly,
+          irNetAnnual,
+          salaryNetToPay,
+          employeeTotalDeductions,
+          netGainVs2024Monthly,
+        };
+      }
+
+      function calculateBrutFromTargetNet(targetNet, input) {
+        let low = targetNet;
+        let high = targetNet * 2.5;
+        let bestInput = { ...input, baseSalary: targetNet };
+        let bestResult = calculateSalaryTax(bestInput);
+
+        for (let i = 0; i < 40; i++) {
+          const mid = (low + high) / 2;
+          bestInput = { ...input, baseSalary: mid };
+          bestResult = calculateSalaryTax(bestInput);
+
+          const diff = bestResult.salaryNetToPay - targetNet;
+          if (Math.abs(diff) < 0.01) break;
+          if (diff > 0) high = mid; else low = mid;
+        }
+
+        return bestResult;
+      }
+
+      function calculateRGI(input) {
+        const {
+          salaryNetImposable = 0,
+          foncierNetImposable = 0,
+          capitauxMobilierImposable = 0,
+          professionnelNetImposable = 0,
+          agricoleNetImposable = 0,
+          familyDependents = 0,
+          taxYear = "2026",
+        } = input;
+
+        const totalRGI = Math.max(
+          0,
+          salaryNetImposable + foncierNetImposable + capitauxMobilierImposable + professionnelNetImposable + agricoleNetImposable
+        );
+
+        const bareme = taxYear === "2026" ? BAREME_2026 : BAREME_2024;
+        let taxBracketRate = 0;
+        let sumToDeductAnnual = 0;
+
+        for (const bracket of bareme) {
+          if (totalRGI >= bracket.min && (bracket.max === null || totalRGI <= bracket.max)) {
+            taxBracketRate = bracket.rate;
+            sumToDeductAnnual = bracket.deduction;
+            break;
+          }
+        }
+
+        const irBrutAnnual = Math.max(0, totalRGI * taxBracketRate - sumToDeductAnnual);
+        const validDependents = Math.min(Math.max(0, familyDependents), 6);
+        const familyDeductionAnnual = validDependents * (taxYear === "2026" ? 500 : 360);
+
+        const irNetAnnual = Math.max(0, irBrutAnnual - familyDeductionAnnual);
+        const effectiveTaxRate = totalRGI > 0 ? (irNetAnnual / totalRGI) * 100 : 0;
+
+        return {
+          totalRGI,
+          irBrutAnnual,
+          familyDeductionAnnual,
+          irNetAnnual,
+          taxBracketRate,
+          effectiveTaxRate,
+        };
+      }
+
+      function calculateFoncier(input) {
+        const {
+          rentMonthly = 0,
+          rentalMonths = 12,
+          taxRegime = "declaration",
+          isCapitalGain = false,
+          salePrice = 0,
+          purchasePrice = 0,
+          investmentCosts = 0,
+          ownershipYears = 0,
+          isMainResidence = false,
+        } = input;
+
+        const grossRentalIncome = rentMonthly * rentalMonths;
+        let taxableRentalIncome = grossRentalIncome;
+        let rentalTaxAmount = 0;
+
+        if (grossRentalIncome > 0) {
+          if (taxRegime === "declaration") {
+            taxableRentalIncome = grossRentalIncome * 0.60;
+            const rate = grossRentalIncome >= 120000 ? 0.15 : 0.10;
+            rentalTaxAmount = taxableRentalIncome * rate;
+          } else {
+            const rate = grossRentalIncome >= 120000 ? 0.15 : 0.10;
+            rentalTaxAmount = grossRentalIncome * rate;
+            taxableRentalIncome = grossRentalIncome;
+          }
+        }
+
+        let capitalGainBrut = 0;
+        let capitalGainNet = 0;
+        let capitalGainTax = 0;
+        let isExempted = false;
+        let exemptionReason = "";
+
+        if (isCapitalGain && salePrice > 0) {
+          const effectiveCosts = investmentCosts > 0 ? investmentCosts : purchasePrice * 0.15;
+          const adjustedPurchasePrice = purchasePrice + effectiveCosts;
+
+          capitalGainBrut = Math.max(0, salePrice - adjustedPurchasePrice);
+          capitalGainNet = capitalGainBrut;
+
+          if (isMainResidence) {
+            if (ownershipYears >= 5) {
+              if (salePrice <= 4000000) {
+                isExempted = true;
+                exemptionReason = "Exonération totale pour résidence principale occupée au moins 5 ans (Prix <= 4 000 000 DH).";
+                capitalGainTax = 0;
+              } else {
+                exemptionReason = "Résidence principale > 5 ans mais prix > 4 MDH: Taxe au prorata de l'excédent.";
+                const excessRatio = (salePrice - 4000000) / salePrice;
+                const tax20Percent = capitalGainNet * 0.20 * excessRatio;
+                const minTax = salePrice * 0.03 * excessRatio;
+                capitalGainTax = Math.max(tax20Percent, minTax);
+              }
+            } else {
+              exemptionReason = "Moins de 5 ans de détention: Soumis à la TPI standard (20%).";
+            }
+          }
+
+          if (!isExempted && capitalGainTax === 0) {
+            const tax20Percent = capitalGainNet * 0.20;
+            const minTax = salePrice * 0.03;
+            capitalGainTax = Math.max(tax20Percent, minTax);
+          }
+        }
+
+        return {
+          grossRentalIncome,
+          taxableRentalIncome,
+          rentalTaxAmount,
+          capitalGainBrut,
+          capitalGainNet,
+          capitalGainTax,
+          isExempted,
+          exemptionReason,
+        };
+      }
+
+      function calculateCPU(input) {
+        const { turnover = 0, activityType = "commercial" } = input;
+
+        let allowanceRate = 0.90;
+        let maxTurnover = 500000;
+        let principalTaxRate = 0.005;
+
+        if (activityType === "service" || activityType === "liberal") {
+          allowanceRate = 0.75;
+          maxTurnover = 200000;
+          principalTaxRate = 0.01;
+        }
+
+        const isEligible = turnover <= maxTurnover;
+        const taxableIncome = turnover * (1 - allowanceRate);
+        const principalTax = turnover * principalTaxRate;
+
+        let socialContributionMonthly = 100;
+        if (turnover > 250000) socialContributionMonthly = 300;
+        else if (turnover > 100000) socialContributionMonthly = 200;
+
+        const totalAnnualTax = principalTax + socialContributionMonthly * 12;
+
+        return {
+          turnover,
+          allowanceRate: allowanceRate * 100,
+          taxableIncome,
+          principalTax,
+          socialContributionMonthly,
+          totalAnnualTax,
+          isEligible,
+        };
+      }
+
+      // --- DATA ---
+      const CGI_ARTICLES = [
+        {
+          number: "Art. 56",
+          title: "Définition et Champ d'application de l'IR Salarial",
+          category: "Champ d'application",
+          summary: "Régit l'imposition des traitements, salaires, indemnités, émoluments, pensions et rentes viagères.",
+          fullText: "Sont soumis à l'impôt sur le revenu au titre des revenus salariaux et assimilés : les traitements, les émoluments, les salaires, les indemnités et émoluments de toute nature accordés par les employeurs privés et publics.",
+          practicalTip: "Tous les avantages en argent ou en nature (logement de fonction, voiture de service à usage personnel) doivent être intégrés au salaire brut imposable.",
+        },
+        {
+          number: "Art. 57",
+          title: "Exonérations d'Impôt sur le Revenu",
+          category: "Exonérations",
+          summary: "Liste les indemnités et primes totalement ou partiellement affranchies de l'IR.",
+          fullText: "Sont exonérés de l'impôt : 1° Les allocations familiales ; 2° L'indemnité de transport jusqu'à 500 DH/mois ; 3° Les frais de nourriture (panier) jusqu'à 30 DH/jour ; 4° L'indemnité de licenciement dans la limite légale du Code du Travail.",
+          practicalTip: "Veillez à conserver les justificatifs de déplacement et feuilles de présence pour justifier des exonérations de transport et de panier lors d'un contrôle fiscal.",
+        },
+        {
+          number: "Art. 59",
+          title: "Déductions sur Salaires (Frais Pro, CNSS, AMO, Retraite & Logement)",
+          category: "Déductions",
+          summary: "Fixe les cotisations sociales, les abattements professionnels et les déductions pour logement déductibles du SBI.",
+          fullText: "Pour la détermination du revenu net imposable, sont déduits du revenu brut imposable : les retenues pour la constitution de pensions ou de retraites (CIMR, CNSS, AMO) et les frais professionnels (35% <= 78k DH / 25% > 78k DH plafonné à 35 000 DH/an).",
+          practicalTip: "Si vous souscrivez à un prêt bancaire pour votre logement principal, exigez une attestation d'intérêts annuelle délivrée par la banque pour bénéficier de la réduction d'IR.",
+        },
+        {
+          number: "Art. 63",
+          title: "Exonérations en matière de Profits Fonciers (TPI)",
+          category: "Exonérations",
+          summary: "Fixe les conditions d'exonération de taxe lors de la cession d'un immeuble d'habitation principale.",
+          fullText: "Est exonéré de l'impôt : le profit réalisé sur la cession d'un immeuble ou partie d'immeuble occupé à titre d'habitation principale depuis au moins cinq (5) ans au jour de ladite cession par le propriétaire, sous réserve que le prix ne dépasse pas 4 000 000 DH.",
+          practicalTip: "Conservez les quittances d'eau/électricité et le certificat de résidence délivré par la sûreté nationale prouvant l'occupation effective pendant 5 ans.",
+        },
+        {
+          number: "Art. 73",
+          title: "Barème Progressif et Taux d'Imposition de l'IR 2026",
+          category: "Barème & Taux",
+          summary: "Fixe les tranches, taux et sommes à déduire révisés par la Loi de Finances 2025/2026.",
+          fullText: "Les taux de l'impôt sont fixés comme suit : Tranche de 0 à 40 000 DH : 0% ; de 40 001 à 60 000 DH : 10% ; de 60 001 à 80 000 DH : 20% ; de 80 001 à 100 000 DH : 30% ; de 100 001 à 180 000 DH : 34% ; Au-delà de 180 000 DH : 37%.",
+          practicalTip: "La méthode rapide de calcul consiste à appliquer la formule : IR Brut Mensuel = (SNI × Taux) - Somme à Déduire mensuelle du barème.",
+        },
+        {
+          number: "Art. 74",
+          title: "Déductions pour Charges de Famille",
+          category: "Déductions",
+          summary: "Accordé sur le montant de l'IR brut au titre des personnes légalement à charge.",
+          fullText: "Il est déduit du montant annuel de l'impôt une somme de 500 DH par personne que le contribuable a à sa charge, sans que le montant total des déductions puisse dépasser 3 000 DH (6 personnes maximum).",
+          practicalTip: "Sont considérés à charge : l'épouse et les enfants légitimes ou adoptés âgés de moins de 27 ans (ou sans limite d'âge s'ils sont atteints d'une infirmité).",
+        },
+        {
+          number: "Art. 82-ter",
+          title: "Régime de la Contribution Professionnelle Unique (CPU)",
+          category: "Champ d'application",
+          summary: "Régime simplifié remplaçant le forfait pour les petites entreprises et auto-entrepreneurs.",
+          fullText: "Le régime de la CPU s'applique aux personnes physiques dont le chiffre d'affaires annuel ne dépasse pas 500 000 DH pour les activités commerciales/industrielles et 200 000 DH pour les prestations de services.",
+          practicalTip: "Le versement de la CPU s'effectue trimestriellement et inclut une cotisation sociale forfaitaire pour l'accès à la couverture AMO.",
+        }
+      ];
+
+      const QUIZ_DATA = [
+        {
+          id: 1,
+          question: "Quel est le nouveau seuil d'exonération totale de l'IR sur salaire par an au Maroc depuis la LF 2025/2026 ?",
+          options: [
+            "30 000 DH / an (2 500 DH / mois)",
+            "36 000 DH / an (3 000 DH / mois)",
+            "40 000 DH / an (3 333,33 DH / mois)",
+            "50 000 DH / an (4 166,67 DH / mois)"
+          ],
+          correctIndex: 2,
+          explanation: "La tranche d'imposition (0%) a été relevée de 30 000 DH à 40 000 DH par an, soit 3 333,33 DH mensuels d'exonération d'IR.",
+          cgiReference: "CGI Maroc Art 73-I (LF 2025/2026)"
+        },
+        {
+          id: 2,
+          question: "Quel est le montant mensuel maximal de la cotisation CNSS Prestations sociales prélevée sur la paie ?",
+          options: [
+            "268,80 DH (4,48% plafonné à 6 000 DH de SBI)",
+            "300,00 DH",
+            "135,60 DH (2,26%)",
+            "Il n'y a aucun plafond"
+          ],
+          correctIndex: 0,
+          explanation: "La cotisation CNSS prestations à court et long terme (4,48%) est plafonnée à 6 000 DH mensuels de SBI, soit max 268,80 DH.",
+          cgiReference: "Code de la Sécurité Sociale & CGI Maroc"
+        },
+        {
+          id: 3,
+          question: "À combien s'élève la déduction d'impôt annuelle par personne à charge sous la LF 2025/2026 ?",
+          options: [
+            "360 DH par an (30 DH par mois)",
+            "500 DH par an (41,67 DH par mois)",
+            "600 DH par an (50 DH par mois)",
+            "1 000 DH par an"
+          ],
+          correctIndex: 1,
+          explanation: "La déduction annuelle pour charges de famille est passée de 360 DH à 500 DH par personne (max 6 personnes), soit 41,67 DH par mois.",
+          cgiReference: "CGI Maroc Art 74 (Modifié par LF 2025)"
+        },
+        {
+          id: 4,
+          question: "Quel est le plafond des frais professionnels retenus pour un salarié standard ayant un SBI annuel > 78 000 DH ?",
+          options: [
+            "25 000 DH par an (2 083,33 DH par mois)",
+            "30 000 DH par an (2 500 DH par mois)",
+            "35 000 DH par an (2 916,67 DH par mois)",
+            "50 000 DH par an (4 166,67 DH par mois)"
+          ],
+          correctIndex: 2,
+          explanation: "Pour un SBI annuel > 78 000 DH, le taux de frais pro est de 25% avec un plafond annuel de 35 000 DH (soit 2 916,67 DH/mois).",
+          cgiReference: "CGI Maroc Art 59-I-B"
+        },
+        {
+          id: 5,
+          question: "Quelle est la condition pour bénéficier de l'exonération totale de TPI lors de la vente de sa résidence principale ?",
+          options: [
+            "Avoir habité l'immeuble au moins 2 ans sans limite de prix",
+            "Avoir habité l'immeuble au moins 5 ans et que le prix ne dépasse pas 4 000 000 DH",
+            "Avoir habité l'immeuble 10 ans",
+            "Racheter un autre bien dans les 6 mois"
+          ],
+          correctIndex: 1,
+          explanation: "L'article 63 du CGI exige une occupation continue d'au moins 5 ans et un prix de vente <= 4 000 000 DH.",
+          cgiReference: "CGI Maroc Art 63-I-B"
+        }
+      ];
+
+      // --- COMPONENTS ---
+
+      // Header Navigation
+      function Header({ activeTab, setActiveTab }) {
+        const tabs = [
+          { id: "salary", label: "Simulateur Salarial", icon: Icons.Calculator, color: "bg-[#FFD700]" },
+          { id: "bareme", label: "Barème 2026 vs 2024", icon: Icons.TrendingUp, color: "bg-[#E0FF2E]" },
+          { id: "foncier", label: "IR Foncier & TPI", icon: Icons.Building, color: "bg-[#FF45F5]" },
+          { id: "cpu", label: "CPU Auto-Entrepreneur", icon: Icons.Award, color: "bg-[#FF5F1F]" },
+          { id: "rgi", label: "RGI Global", icon: Icons.ShieldCheck, color: "bg-[#00E5FF]" },
+          { id: "exercises", label: "Cas Pratiques", icon: Icons.FileText, color: "bg-[#FFD700]" },
+          { id: "guide", label: "Guide CGI 2026", icon: Icons.BookOpen, color: "bg-[#E0FF2E]" },
+          { id: "quiz", label: "Quiz IR 2026", icon: Icons.HelpCircle, color: "bg-[#FF45F5]" },
+          { id: "ai", label: "Assistant AI Offline", icon: Icons.Sparkles, color: "bg-[#FF5F1F]" },
+        ];
+
+        return (
+          <header className="bg-black text-white border-b-4 border-black p-4 sticky top-0 z-40 shadow-[0px_4px_0px_0px_#000]">
+            <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="flex items-center space-x-3">
+                <div className="bg-[#FFD700] text-black p-2.5 rounded-2xl border-2 border-white shadow-[3px_3px_0px_0px_#FFF] font-black">
+                  <Icons.Calculator className="w-7 h-7" />
+                </div>
+                <div>
+                  <h1 className="text-xl md:text-2xl font-black text-[#FFD700] tracking-wide flex items-center gap-2">
+                    CGI MAROC 2026
+                    <span className="bg-[#E0FF2E] text-black text-xs px-2 py-0.5 rounded-full border border-white font-extrabold">LF 2025/2026</span>
+                  </h1>
+                  <p className="text-xs text-white/80 font-bold">Simulateur Fiscal Exhaustif & Guide CGI Officiel</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap justify-center gap-2">
+                {tabs.map((t) => {
+                  const Icon = t.icon;
+                  const isActive = activeTab === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      onClick={() => setActiveTab(t.id)}
+                      className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-xl font-black text-xs transition-all cursor-pointer border-2 border-black ${
+                        isActive
+                          ? `${t.color} text-black shadow-[3px_3px_0px_0px_#FFF] translate-y-[-2px]`
+                          : "bg-white/10 text-white hover:bg-white/20"
+                      }`}
+                    >
+                      <Icon className="w-4 h-4 stroke-[2.5]" />
+                      <span>{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </header>
+        );
+      }
+
+      // Salary Simulator
+      function SalarySimulator({ onGeneratePaySlip }) {
+        const [mode, setMode] = useState("brutToNet"); // 'brutToNet' | 'netToBrut'
+        const [baseSalary, setBaseSalary] = useState(10000);
+        const [targetNet, setTargetNet] = useState(8000);
+        const [seniorityBonus, setSeniorityBonus] = useState(0);
+        const [exemptAllowances, setExemptAllowances] = useState(500);
+        const [familyDependents, setFamilyDependents] = useState(0);
+        const [housingLoanInterest, setHousingLoanInterest] = useState(0);
+        const [isSocialHousing, setIsSocialHousing] = useState(false);
+        const [cimrRate, setCimrRate] = useState(0);
+        const [professionType, setProfessionType] = useState("standard");
+        const [taxYear, setTaxYear] = useState("2026");
+
+        const result = useMemo(() => {
+          if (mode === "brutToNet") {
+            return calculateSalaryTax({
+              baseSalary: Number(baseSalary) || 0,
+              seniorityBonus: Number(seniorityBonus) || 0,
+              exemptAllowances: Number(exemptAllowances) || 0,
+              familyDependents: Number(familyDependents) || 0,
+              housingLoanInterest: Number(housingLoanInterest) || 0,
+              isSocialHousing,
+              cimrRate: Number(cimrRate) || 0,
+              professionType,
+              taxYear,
+            });
+          } else {
+            return calculateBrutFromTargetNet(Number(targetNet) || 0, {
+              seniorityBonus: Number(seniorityBonus) || 0,
+              exemptAllowances: Number(exemptAllowances) || 0,
+              familyDependents: Number(familyDependents) || 0,
+              housingLoanInterest: Number(housingLoanInterest) || 0,
+              isSocialHousing,
+              cimrRate: Number(cimrRate) || 0,
+              professionType,
+              taxYear,
+            });
+          }
+        }, [mode, baseSalary, targetNet, seniorityBonus, exemptAllowances, familyDependents, housingLoanInterest, isSocialHousing, cimrRate, professionType, taxYear]);
+
+        return (
+          <div className="space-y-6 max-w-6xl mx-auto">
+            {/* Mode Switcher */}
+            <div className="bg-black p-4 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FFD700] flex flex-col md:flex-row items-center justify-between gap-4">
+              <div className="text-white">
+                <h2 className="text-xl font-black text-[#FFD700]">Simulateur de Salaire IR Maroc 2026</h2>
+                <p className="text-xs text-white/80 font-bold">Calcul direct Brut ➔ Net ou Inversé Net ➔ Brut selon le barème LF 2025/2026</p>
+              </div>
+              <div className="flex bg-white p-1 rounded-2xl border-2 border-black">
+                <button
+                  onClick={() => setMode("brutToNet")}
+                  className={`px-4 py-2 rounded-xl font-black text-xs transition-all ${
+                    mode === "brutToNet" ? "bg-[#FF5F1F] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]" : "text-black/70 hover:text-black"
+                  }`}
+                >
+                  Brut ➔ Net à Payer
+                </button>
+                <button
+                  onClick={() => setMode("netToBrut")}
+                  className={`px-4 py-2 rounded-xl font-black text-xs transition-all ${
+                    mode === "netToBrut" ? "bg-[#FF45F5] text-black border-2 border-black shadow-[2px_2px_0px_0px_#000]" : "text-black/70 hover:text-black"
+                  }`}
+                >
+                  Net Visé ➔ Brut Requis
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* Form Controls */}
+              <div className="lg:col-span-6 bg-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
+                <div className="border-b-2 border-black pb-2 flex justify-between items-center">
+                  <h3 className="font-black text-base flex items-center gap-2">
+                    <Icons.Calculator className="w-5 h-5" />
+                    <span>Paramètres de Paie</span>
+                  </h3>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs font-black">Régime:</span>
+                    <select
+                      value={taxYear}
+                      onChange={(e) => setTaxYear(e.target.value)}
+                      className="bg-[#E0FF2E] border-2 border-black font-black text-xs px-2 py-1 rounded-xl"
+                    >
+                      <option value="2026">Barème 2026 (LF 2025)</option>
+                      <option value="2024">Barème 2024 (Ancien)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {mode === "brutToNet" ? (
+                  <div>
+                    <label className="block text-xs font-black mb-1">Salaire de Base Mensuel Brut (DH)</label>
+                    <input
+                      type="number"
+                      value={baseSalary}
+                      onChange={(e) => setBaseSalary(Number(e.target.value))}
+                      className="w-full p-3 border-2 border-black rounded-xl font-bold text-sm bg-amber-50 shadow-[2px_2px_0px_0px_#000]"
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-xs font-black mb-1">Salaire Net à Payer Souhaité (DH)</label>
+                    <input
+                      type="number"
+                      value={targetNet}
+                      onChange={(e) => setTargetNet(Number(e.target.value))}
+                      className="w-full p-3 border-2 border-black rounded-xl font-bold text-sm bg-pink-50 shadow-[2px_2px_0px_0px_#000]"
+                    />
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-black mb-1">Prime Ancienneté (DH)</label>
+                    <input
+                      type="number"
+                      value={seniorityBonus}
+                      onChange={(e) => setSeniorityBonus(Number(e.target.value))}
+                      className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black mb-1">Indemnités Exonérées (DH)</label>
+                    <input
+                      type="number"
+                      value={exemptAllowances}
+                      onChange={(e) => setExemptAllowances(Number(e.target.value))}
+                      className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-black mb-1">Charges de Famille (Personnes)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      max="6"
+                      value={familyDependents}
+                      onChange={(e) => setFamilyDependents(Number(e.target.value))}
+                      className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                    />
+                    <p className="text-[10px] font-bold text-slate-500 mt-0.5">500 DH/an par personne (Max 6)</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black mb-1">Cotisation CIMR (%)</label>
+                    <input
+                      type="number"
+                      step="0.5"
+                      min="0"
+                      max="12"
+                      value={cimrRate}
+                      onChange={(e) => setCimrRate(Number(e.target.value))}
+                      className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-black mb-1">Catégorie Professionnelle (Frais Pro)</label>
+                  <select
+                    value={professionType}
+                    onChange={(e) => setProfessionType(e.target.value)}
+                    className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs bg-slate-50"
+                  >
+                    <option value="standard">Standard (35% &lt;= 78k DH / 25% &gt; 78k DH - Plafond 35k DH/an)</option>
+                    <option value="voyageur">Voyageur / Représentant de commerce VRP (45% - Plafond 50k DH/an)</option>
+                    <option value="enseignant">Enseignant du secteur privé (45% - Plafond 35k DH/an)</option>
+                    <option value="journaliste">Journaliste / Metteur en scène (45% - Plafond 35k DH/an)</option>
+                  </select>
+                </div>
+
+                <div className="p-3 bg-amber-50 border-2 border-black rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-black">Intérêts Prêt Logement Principal (DH/mois)</label>
+                    <input
+                      type="number"
+                      value={housingLoanInterest}
+                      onChange={(e) => setHousingLoanInterest(Number(e.target.value))}
+                      className="w-32 p-1.5 border-2 border-black rounded-xl font-bold text-xs bg-white text-right"
+                    />
+                  </div>
+                  <label className="flex items-center space-x-2 text-xs font-bold cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isSocialHousing}
+                      onChange={(e) => setIsSocialHousing(e.target.checked)}
+                      className="w-4 h-4 border-2 border-black rounded"
+                    />
+                    <span>S'agit-il d'un Logement Social (&lt;= 250 000 DH) ?</span>
+                  </label>
+                </div>
+              </div>
+
+              {/* Output Results Card */}
+              <div className="lg:col-span-6 space-y-4">
+                <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FFD700] space-y-4">
+                  <div className="flex justify-between items-center border-b-2 border-white/20 pb-3">
+                    <h3 className="font-black text-lg text-[#FFD700]">Résultat du Décompte Fiscal</h3>
+                    <button
+                      onClick={() => onGeneratePaySlip({ input: { baseSalary, seniorityBonus, exemptAllowances, familyDependents, housingLoanInterest, isSocialHousing, cimrRate, professionType, taxYear }, output: result })}
+                      className="bg-[#FF45F5] text-black font-black px-3 py-1.5 rounded-xl border-2 border-white text-xs hover:bg-[#ff2ae3] shadow-[2px_2px_0px_0px_#FFF] flex items-center space-x-1 cursor-pointer"
+                    >
+                      <Icons.FileText className="w-4 h-4" />
+                      <span>Générer Bulletin</span>
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-center">
+                    <div className="bg-white/10 p-3 rounded-2xl border border-white/20">
+                      <span className="text-[10px] font-bold text-white/70 block uppercase">Salaire Brut Global</span>
+                      <span className="text-lg font-black text-white">{result.salaryBrut.toFixed(2)} DH</span>
+                    </div>
+                    <div className="bg-[#E0FF2E] text-black p-3 rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#FFF]">
+                      <span className="text-[10px] font-extrabold uppercase block">Net à Payer Final</span>
+                      <span className="text-xl font-black">{result.salaryNetToPay.toFixed(2)} DH</span>
+                    </div>
+                  </div>
+
+                  {taxYear === "2026" && result.netGainVs2024Monthly !== undefined && (
+                    <div className="bg-[#FFD700] text-black p-3 rounded-2xl border-2 border-black font-black text-xs flex items-center justify-between shadow-[3px_3px_0px_0px_#FFF]">
+                      <span>⚡ Gain Pouvoir d'Achat (vs Barème 2024) :</span>
+                      <span className="text-sm bg-black text-[#FFD700] px-2.5 py-1 rounded-xl">+ {result.netGainVs2024Monthly.toFixed(2)} DH / mois</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 text-xs font-bold pt-2">
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Salaire Brut Imposable (SBI) :</span>
+                      <span>{result.salaryBrutImposable.toFixed(2)} DH</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Cotisation CNSS (4.48% max 268.80 DH) :</span>
+                      <span className="text-rose-400 font-bold">- {result.cnssContribution.toFixed(2)} DH</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Cotisation AMO (2.26%) :</span>
+                      <span className="text-rose-400 font-bold">- {result.amoContribution.toFixed(2)} DH</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Abattement Frais Professionnels :</span>
+                      <span className="text-emerald-400 font-bold">- {result.fraisProfessionnels.toFixed(2)} DH</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Salaire Net Imposable (SNI) :</span>
+                      <span className="text-[#FFD700] font-black">{result.salaryNetImposable.toFixed(2)} DH</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Taux Marginal IR appliqué :</span>
+                      <span className="bg-white/20 px-2 py-0.5 rounded-lg text-white font-black">{(result.taxRate * 100).toFixed(0)}%</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Déduction Charges de Famille ({familyDependents} pers) :</span>
+                      <span className="text-emerald-400 font-bold">- {result.familyDeductionMonthly.toFixed(2)} DH</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10 text-sm">
+                      <span className="text-[#FFD700] font-black">Impôt sur le Revenu Net (IR Net) :</span>
+                      <span className="text-[#FF45F5] font-black">{result.irNetMonthly.toFixed(2)} DH / mois</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Bareme Comparison Component
+      function BaremeComparison() {
+        return (
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#E0FF2E]">
+              <h2 className="text-xl font-black text-[#E0FF2E] flex items-center gap-2">
+                <Icons.TrendingUp className="w-6 h-6" />
+                <span>Comparateur Exhaustif : Barème IR 2024 vs Barème IR 2026 (LF 2025)</span>
+              </h2>
+              <p className="text-xs text-white/80 font-bold mt-1">
+                La réforme fiscale relève le seuil d'exonération de 30 000 DH à 40 000 DH/an et réduit les taux d'imposition intermédiaires.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Barème 2024 */}
+              <div className="bg-white p-5 rounded-3xl border-3 border-black shadow-[5px_5px_0px_0px_#000]">
+                <h3 className="font-black text-base mb-3 pb-2 border-b-2 border-black flex justify-between items-center">
+                  <span>Ancien Barème 2024</span>
+                  <span className="bg-slate-200 text-black text-xs px-2.5 py-0.5 rounded-full">Avant Réforme</span>
+                </h3>
+                <div className="space-y-2 text-xs font-bold">
+                  {BAREME_2024.map((b, i) => (
+                    <div key={i} className="p-2.5 rounded-xl border border-slate-200 bg-slate-50 flex justify-between items-center">
+                      <div>
+                        <span>{b.min.toLocaleString()} - {b.max ? b.max.toLocaleString() : "Plus"} DH/an</span>
+                        <span className="block text-[10px] text-slate-500">({b.monthlyMin.toFixed(0)} - {b.monthlyMax ? b.monthlyMax.toFixed(0) : "Plus"} DH/mois)</span>
+                      </div>
+                      <span className="font-black bg-black text-white px-2 py-1 rounded-lg">{(b.rate * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Barème 2026 */}
+              <div className="bg-[#E0FF2E] p-5 rounded-3xl border-3 border-black shadow-[5px_5px_0px_0px_#000]">
+                <h3 className="font-black text-base mb-3 pb-2 border-b-2 border-black flex justify-between items-center text-black">
+                  <span>Nouveau Barème 2026 (LF 2025)</span>
+                  <span className="bg-black text-[#E0FF2E] text-xs px-2.5 py-0.5 rounded-full font-black">Nouveau CGI</span>
+                </h3>
+                <div className="space-y-2 text-xs font-bold">
+                  {BAREME_2026.map((b, i) => (
+                    <div key={i} className="p-2.5 rounded-xl border-2 border-black bg-white flex justify-between items-center shadow-[2px_2px_0px_0px_#000]">
+                      <div>
+                        <span className="font-black text-black">{b.min.toLocaleString()} - {b.max ? b.max.toLocaleString() : "Plus"} DH/an</span>
+                        <span className="block text-[10px] font-bold text-slate-600">({b.monthlyMin.toFixed(0)} - {b.monthlyMax ? b.monthlyMax.toFixed(0) : "Plus"} DH/mois)</span>
+                      </div>
+                      <span className="font-black bg-[#FF5F1F] text-black px-2.5 py-1 rounded-lg border border-black font-extrabold">{(b.rate * 100)}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Foncier Simulator
+      function FoncierSimulator() {
+        const [rentMonthly, setRentMonthly] = useState(6000);
+        const [rentalMonths, setRentalMonths] = useState(12);
+        const [taxRegime, setTaxRegime] = useState("declaration");
+        const [isCapitalGain, setIsCapitalGain] = useState(false);
+        const [salePrice, setSalePrice] = useState(1500000);
+        const [purchasePrice, setPurchasePrice] = useState(1000000);
+        const [ownershipYears, setOwnershipYears] = useState(6);
+        const [isMainResidence, setIsMainResidence] = useState(true);
+
+        const foncier = useMemo(() => {
+          return calculateFoncier({
+            rentMonthly: Number(rentMonthly) || 0,
+            rentalMonths: Number(rentalMonths) || 0,
+            taxRegime,
+            isCapitalGain,
+            salePrice: Number(salePrice) || 0,
+            purchasePrice: Number(purchasePrice) || 0,
+            ownershipYears: Number(ownershipYears) || 0,
+            isMainResidence,
+          });
+        }, [rentMonthly, rentalMonths, taxRegime, isCapitalGain, salePrice, purchasePrice, ownershipYears, isMainResidence]);
+
+        return (
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FF45F5]">
+              <h2 className="text-xl font-black text-[#FF45F5] flex items-center gap-2">
+                <Icons.Building className="w-6 h-6" />
+                <span>Simulateur d'Impôt Foncier & Taxe sur Profits Immobilier (TPI)</span>
+              </h2>
+              <p className="text-xs text-white/80 font-bold mt-1">Abattement de 40% sur revenus locatifs et règles d'exonération résidence principale (CGI Art. 63)</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Form Controls */}
+              <div className="bg-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
+                <h3 className="font-black text-base border-b-2 border-black pb-2">1. Revenus Locatifs</h3>
+                <div>
+                  <label className="block text-xs font-black mb-1">Loyer Mensuel Encaissé (DH)</label>
+                  <input
+                    type="number"
+                    value={rentMonthly}
+                    onChange={(e) => setRentMonthly(Number(e.target.value))}
+                    className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-black mb-1">Mois Loués / An</label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="12"
+                      value={rentalMonths}
+                      onChange={(e) => setRentalMonths(Number(e.target.value))}
+                      className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-black mb-1">Régime de Déclaration</label>
+                    <select
+                      value={taxRegime}
+                      onChange={(e) => setTaxRegime(e.target.value)}
+                      className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs bg-slate-50"
+                    >
+                      <option value="declaration">Déclaration Spontanée (40% abattement)</option>
+                      <option value="ras">Retenue à la Source RAS (10%/15%)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="border-t-2 border-black pt-4 space-y-3">
+                  <label className="flex items-center space-x-2 text-xs font-black cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={isCapitalGain}
+                      onChange={(e) => setIsCapitalGain(e.target.checked)}
+                      className="w-4 h-4 border-2 border-black rounded"
+                    />
+                    <span>Activer la simulation TPI / Plus-value Cession Immeuble</span>
+                  </label>
+
+                  {isCapitalGain && (
+                    <div className="space-y-3 bg-pink-50 p-3 rounded-2xl border-2 border-black">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-black mb-1">Prix Vente (DH)</label>
+                          <input
+                            type="number"
+                            value={salePrice}
+                            onChange={(e) => setSalePrice(Number(e.target.value))}
+                            className="w-full p-2 border-2 border-black rounded-xl font-bold text-xs bg-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-[10px] font-black mb-1">Prix Achat (DH)</label>
+                          <input
+                            type="number"
+                            value={purchasePrice}
+                            onChange={(e) => setPurchasePrice(Number(e.target.value))}
+                            className="w-full p-2 border-2 border-black rounded-xl font-bold text-xs bg-white"
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <label className="block text-[10px] font-black mb-1">Années Détention</label>
+                          <input
+                            type="number"
+                            value={ownershipYears}
+                            onChange={(e) => setOwnershipYears(Number(e.target.value))}
+                            className="w-full p-2 border-2 border-black rounded-xl font-bold text-xs bg-white"
+                          />
+                        </div>
+                        <div className="flex items-center">
+                          <label className="flex items-center space-x-1 text-[11px] font-black cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={isMainResidence}
+                              onChange={(e) => setIsMainResidence(e.target.checked)}
+                              className="w-4 h-4 border-2 border-black rounded"
+                            />
+                            <span>Résidence Principale ?</span>
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Output */}
+              <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FF45F5] space-y-4">
+                <h3 className="font-black text-lg text-[#FF45F5] border-b-2 border-white/20 pb-2">Décompte Fiscal Foncier</h3>
+
+                <div className="p-4 bg-white/10 rounded-2xl border border-white/20 space-y-2 text-xs font-bold">
+                  <div className="flex justify-between">
+                    <span className="text-white/70">Revenu Foncier Brut Annuel :</span>
+                    <span>{foncier.grossRentalIncome.toLocaleString()} DH</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/70">Revenu Net Imposable (après abattement) :</span>
+                    <span className="text-[#E0FF2E] font-black">{foncier.taxableRentalIncome.toLocaleString()} DH</span>
+                  </div>
+                  <div className="flex justify-between text-sm pt-2 border-t border-white/10">
+                    <span className="text-[#FFD700] font-black">Impôt Foncier Annuel Dû :</span>
+                    <span className="text-[#FF45F5] font-black">{foncier.rentalTaxAmount.toLocaleString()} DH</span>
+                  </div>
+                </div>
+
+                {isCapitalGain && (
+                  <div className="p-4 bg-[#FF45F5] text-black rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#FFF] space-y-2 text-xs font-black">
+                    <h4 className="font-black border-b border-black pb-1 uppercase">Taxe Cession Immobilière (TPI)</h4>
+                    <div className="flex justify-between">
+                      <span>Profit Foncier Net :</span>
+                      <span>{foncier.capitalGainNet.toLocaleString()} DH</span>
+                    </div>
+                    {foncier.isExempted ? (
+                      <div className="bg-black text-[#E0FF2E] p-2 rounded-xl text-center">
+                        ✅ {foncier.exemptionReason}
+                      </div>
+                    ) : (
+                      <div className="flex justify-between text-sm font-black pt-1">
+                        <span>TPI Dû à Verser :</span>
+                        <span className="bg-black text-[#FFD700] px-2 py-0.5 rounded-lg">{foncier.capitalGainTax.toLocaleString()} DH</span>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // CPU Simulator
+      function CPUSimulator() {
+        const [turnover, setTurnover] = useState(150000);
+        const [activityType, setActivityType] = useState("commercial");
+
+        const cpu = useMemo(() => {
+          return calculateCPU({ turnover: Number(turnover) || 0, activityType });
+        }, [turnover, activityType]);
+
+        return (
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FF5F1F]">
+              <h2 className="text-xl font-black text-[#FF5F1F] flex items-center gap-2">
+                <Icons.Award className="w-6 h-6" />
+                <span>Simulateur Contribution Professionnelle Unique (CPU) & Auto-Entrepreneur</span>
+              </h2>
+              <p className="text-xs text-white/80 font-bold mt-1">Régime fiscal simplifié incluant l'impôt principal et la couverture santé AMO (CGI Art. 82-ter)</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
+                <h3 className="font-black text-base border-b-2 border-black pb-2">Données de l'Activité</h3>
+                <div>
+                  <label className="block text-xs font-black mb-1">Chiffre d'Affaires Annuel Réalisé (DH)</label>
+                  <input
+                    type="number"
+                    value={turnover}
+                    onChange={(e) => setTurnover(Number(e.target.value))}
+                    className="w-full p-3 border-2 border-black rounded-xl font-bold text-sm bg-orange-50 shadow-[2px_2px_0px_0px_#000]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black mb-1">Secteur / Nature de l'Activité</label>
+                  <select
+                    value={activityType}
+                    onChange={(e) => setActivityType(e.target.value)}
+                    className="w-full p-3 border-2 border-black rounded-xl font-bold text-xs bg-slate-50"
+                  >
+                    <option value="commercial">Commerciale, Industrielle ou Artisanale (Plafond 500 000 DH - Taux 0.5%)</option>
+                    <option value="service">Prestation de Services (Plafond 200 000 DH - Taux 1.0%)</option>
+                    <option value="liberal">Professions Libérales éligibles (Plafond 200 000 DH - Taux 1.0%)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FF5F1F] space-y-4">
+                <h3 className="font-black text-lg text-[#FF5F1F] border-b-2 border-white/20 pb-2">Décompte Impôt & Cotisation Santé</h3>
+                {!cpu.isEligible ? (
+                  <div className="bg-[#FF45F5] text-black p-4 rounded-2xl font-black text-xs">
+                    ⚠️ Attention: Chiffre d'affaires supérieur au plafond légal du régime CPU. Vous êtes soumis au régime du résultat net réel ou simplifié.
+                  </div>
+                ) : (
+                  <div className="space-y-3 text-xs font-bold">
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Taux d'Impôt Principal :</span>
+                      <span className="text-[#FFD700] font-black">{activityType === "commercial" ? "0.5%" : "1.0%"}</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Impôt Principal Annuel :</span>
+                      <span>{cpu.principalTax.toFixed(2)} DH</span>
+                    </div>
+                    <div className="flex justify-between py-1 border-b border-white/10">
+                      <span className="text-white/70">Cotisation AMO forfaitaire mensuelle :</span>
+                      <span className="text-[#E0FF2E] font-black">{cpu.socialContributionMonthly.toFixed(2)} DH / mois</span>
+                    </div>
+                    <div className="bg-[#FF5F1F] text-black p-4 rounded-2xl font-black text-sm flex justify-between items-center shadow-[3px_3px_0px_0px_#FFF]">
+                      <span>Total Versé / An :</span>
+                      <span className="text-base bg-black text-[#FF5F1F] px-3 py-1 rounded-xl border border-black">{cpu.totalAnnualTax.toFixed(2)} DH</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // RGI Simulator
+      function RGISimulator() {
+        const [salaryNetImposable, setSalaryNetImposable] = useState(120000);
+        const [foncierNetImposable, setFoncierNetImposable] = useState(30000);
+        const [professionnelNetImposable, setProfessionnelNetImposable] = useState(0);
+        const [familyDependents, setFamilyDependents] = useState(2);
+
+        const rgi = useMemo(() => {
+          return calculateRGI({
+            salaryNetImposable: Number(salaryNetImposable) || 0,
+            foncierNetImposable: Number(foncierNetImposable) || 0,
+            professionnelNetImposable: Number(professionnelNetImposable) || 0,
+            familyDependents: Number(familyDependents) || 0,
+            taxYear: "2026",
+          });
+        }, [salaryNetImposable, foncierNetImposable, professionnelNetImposable, familyDependents]);
+
+        return (
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#00E5FF]">
+              <h2 className="text-xl font-black text-[#00E5FF] flex items-center gap-2">
+                <Icons.ShieldCheck className="w-6 h-6" />
+                <span>Simulateur de Revenu Global Imposable (RGI) Multi-Sources</span>
+              </h2>
+              <p className="text-xs text-white/80 font-bold mt-1">Cumul annuel des revenus salariaux, fonciers et professionnels sous le barème IR 2026</p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#000] space-y-3">
+                <h3 className="font-black text-base border-b-2 border-black pb-2">Revenus Annuels Net Imposables</h3>
+                <div>
+                  <label className="block text-xs font-black mb-1">Net Imposable Salarial (DH/an)</label>
+                  <input
+                    type="number"
+                    value={salaryNetImposable}
+                    onChange={(e) => setSalaryNetImposable(Number(e.target.value))}
+                    className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black mb-1">Net Imposable Foncier (DH/an)</label>
+                  <input
+                    type="number"
+                    value={foncierNetImposable}
+                    onChange={(e) => setFoncierNetImposable(Number(e.target.value))}
+                    className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black mb-1">Net Imposable Professionnel (DH/an)</label>
+                  <input
+                    type="number"
+                    value={professionnelNetImposable}
+                    onChange={(e) => setProfessionnelNetImposable(Number(e.target.value))}
+                    className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-black mb-1">Charges de Famille (Personnes)</label>
+                  <input
+                    type="number"
+                    value={familyDependents}
+                    onChange={(e) => setFamilyDependents(Number(e.target.value))}
+                    className="w-full p-2.5 border-2 border-black rounded-xl font-bold text-xs"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#00E5FF] space-y-4">
+                <h3 className="font-black text-lg text-[#00E5FF] border-b-2 border-white/20 pb-2">Synthèse RGI & IR Global</h3>
+                <div className="space-y-3 text-xs font-bold">
+                  <div className="flex justify-between py-1 border-b border-white/10">
+                    <span className="text-white/70">Revenu Global Imposable Total :</span>
+                    <span className="text-[#FFD700] font-black text-sm">{rgi.totalRGI.toLocaleString()} DH / an</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-white/10">
+                    <span className="text-white/70">Tranche Marginale IR 2026 :</span>
+                    <span className="bg-white/20 px-2 py-0.5 rounded text-white font-black">{(rgi.taxBracketRate * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-white/10">
+                    <span className="text-white/70">Déduction Familiale ({familyDependents} pers) :</span>
+                    <span className="text-emerald-400 font-bold">- {rgi.familyDeductionAnnual.toLocaleString()} DH</span>
+                  </div>
+                  <div className="bg-[#00E5FF] text-black p-4 rounded-2xl font-black text-sm flex justify-between items-center shadow-[3px_3px_0px_0px_#FFF]">
+                    <span>IR Net Global Annuel :</span>
+                    <span className="text-base bg-black text-[#00E5FF] px-3 py-1 rounded-xl border border-black">{rgi.irNetAnnual.toLocaleString()} DH</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Guide CGI Component
+      function CGIGuide() {
+        const [searchTerm, setSearchTerm] = useState("");
+
+        const filteredArticles = CGI_ARTICLES.filter(
+          (a) =>
+            a.number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            a.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            a.summary.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+
+        return (
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#E0FF2E] flex flex-col md:flex-row justify-between items-center gap-4">
+              <div>
+                <h2 className="text-xl font-black text-[#E0FF2E] flex items-center gap-2">
+                  <Icons.BookOpen className="w-6 h-6" />
+                  <span>Guide Officiel Vulgarisé du CGI Maroc 2026</span>
+                </h2>
+                <p className="text-xs text-white/80 font-bold mt-1">Articles clés du Code Général des Impôts décodés avec conseils pratiques</p>
+              </div>
+              <input
+                type="text"
+                placeholder="Rechercher un article (ex: Art. 59, Exonérations)..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full md:w-72 p-2.5 bg-white text-black border-2 border-black rounded-xl font-bold text-xs"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 gap-4">
+              {filteredArticles.map((art, idx) => (
+                <div key={idx} className="bg-white p-5 rounded-3xl border-3 border-black shadow-[5px_5px_0px_0px_#000] space-y-3">
+                  <div className="flex justify-between items-center border-b-2 border-black pb-2">
+                    <span className="bg-[#FFD700] text-black font-black text-xs px-3 py-1 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000]">
+                      {art.number}
+                    </span>
+                    <span className="text-xs font-black bg-slate-100 px-2.5 py-1 rounded-lg border border-black">{art.category}</span>
+                  </div>
+                  <h3 className="font-black text-base text-black">{art.title}</h3>
+                  <p className="text-xs font-bold text-slate-800 bg-amber-50 p-3 rounded-2xl border border-black">{art.fullText}</p>
+                  <div className="bg-[#E0FF2E] p-3 rounded-2xl border-2 border-black text-xs font-black flex items-start space-x-2">
+                    <Icons.Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
+                    <span>Conseil Pratique : {art.practicalTip}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      }
+
+      // Quiz Component
+      function QuizSection() {
+        const [currentIdx, setCurrentIdx] = useState(0);
+        const [selectedOption, setSelectedOption] = useState(null);
+        const [score, setScore] = useState(0);
+        const [showResult, setShowResult] = useState(false);
+
+        const q = QUIZ_DATA[currentIdx];
+
+        const handleAnswer = (idx) => {
+          if (selectedOption !== null) return;
+          setSelectedOption(idx);
+          if (idx === q.correctIndex) {
+            setScore(score + 1);
+          }
+        };
+
+        const nextQuestion = () => {
+          if (currentIdx + 1 < QUIZ_DATA.length) {
+            setCurrentIdx(currentIdx + 1);
+            setSelectedOption(null);
+          } else {
+            setShowResult(true);
+          }
+        };
+
+        const restart = () => {
+          setCurrentIdx(0);
+          setSelectedOption(null);
+          setScore(0);
+          setShowResult(false);
+        };
+
+        return (
+          <div className="space-y-6 max-w-3xl mx-auto">
+            <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FF45F5]">
+              <h2 className="text-xl font-black text-[#FF45F5] flex items-center gap-2">
+                <Icons.HelpCircle className="w-6 h-6" />
+                <span>Quiz Interactif : Maîtrise de l'IR Maroc 2026</span>
+              </h2>
+              <p className="text-xs text-white/80 font-bold mt-1">Testez vos connaissances fiscales sur la révision du CGI et de la LF 2025/2026</p>
+            </div>
+
+            {showResult ? (
+              <div className="bg-white p-8 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#000] text-center space-y-4">
+                <h3 className="text-2xl font-black">Résultat du Quiz</h3>
+                <p className="text-4xl font-black text-[#FF5F1F]">{score} / {QUIZ_DATA.length}</p>
+                <p className="text-xs font-bold text-slate-700">
+                  {score === QUIZ_DATA.length ? "🎉 Excellent ! Vous maîtrisez parfaitement la fiscalité marocaine 2026 !" : "Bon effort ! Continuez à réviser avec le Guide CGI."}
+                </p>
+                <button
+                  onClick={restart}
+                  className="bg-[#FFD700] text-black font-black px-6 py-3 rounded-2xl border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:bg-amber-400 cursor-pointer"
+                >
+                  Recommencer le Quiz
+                </button>
+              </div>
+            ) : (
+              <div className="bg-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#000] space-y-4">
+                <div className="flex justify-between items-center text-xs font-black">
+                  <span>Question {currentIdx + 1} / {QUIZ_DATA.length}</span>
+                  <span className="bg-[#FFD700] px-2.5 py-1 rounded-lg border border-black">Score : {score}</span>
+                </div>
+
+                <h3 className="font-black text-base">{q.question}</h3>
+
+                <div className="space-y-2">
+                  {q.options.map((opt, idx) => {
+                    let btnClass = "bg-slate-50 border-2 border-black hover:bg-slate-100 text-black";
+                    if (selectedOption !== null) {
+                      if (idx === q.correctIndex) btnClass = "bg-[#E0FF2E] border-2 border-black text-black font-black";
+                      else if (idx === selectedOption) btnClass = "bg-rose-200 border-2 border-black text-rose-900";
+                    }
+
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => handleAnswer(idx)}
+                        disabled={selectedOption !== null}
+                        className={`w-full p-3 rounded-2xl text-xs font-bold text-left transition-all cursor-pointer ${btnClass}`}
+                      >
+                        {opt}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {selectedOption !== null && (
+                  <div className="p-4 bg-amber-50 rounded-2xl border-2 border-black text-xs space-y-2">
+                    <p className="font-black text-black">Explication : {q.explanation}</p>
+                    <p className="font-bold text-slate-600 text-[10px]">Réf : {q.cgiReference}</p>
+                    <button
+                      onClick={nextQuestion}
+                      className="w-full bg-black text-[#FFD700] font-black py-2.5 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] mt-2 cursor-pointer"
+                    >
+                      Question Suivante ➔
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Offline AI Assistant
+      function AiAdvisor() {
+        const [messages, setMessages] = useState([
+          {
+            id: "1",
+            sender: "bot",
+            text: "Bonjour ! Je suis votre Assistant Fiscal AI hors-ligne spécialisé dans le Code Général des Impôts du Maroc (CGI & LF 2025/2026). Poser votre question sur le calcul de l'IR, les exonérations ou la CPU !",
+            timestamp: "10:00",
+          },
+        ]);
+        const [inputPrompt, setInputPrompt] = useState("");
+
+        const handleSend = (textToSend) => {
+          const query = textToSend || inputPrompt;
+          if (!query.trim()) return;
+
+          const userMsg = {
+            id: Date.now().toString(),
+            sender: "user",
+            text: query,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          };
+
+          setMessages((prev) => [...prev, userMsg]);
+          if (!textToSend) setInputPrompt("");
+
+          setTimeout(() => {
+            let answer = "Selon le CGI Maroc (Loi de Finances 2025/2026), l'imposition des revenus s'effectue selon le barème progressif. Pour toute déduction (CNSS, AMO, CIMR, Prêt immobilier), les justificatifs doivent être fournis à l'employeur.";
+            const qLower = query.toLowerCase();
+
+            if (qLower.includes("barème") || qLower.includes("tranche")) {
+              answer = "Le nouveau barème IR 2026 comporte 6 tranches : 0% jusqu'à 40 000 DH/an, 10% de 40 001 à 60 000 DH, 20% de 60 001 à 80 000 DH, 30% de 80 001 à 100 000 DH, 34% de 100 001 à 180 000 DH et 37% au-delà de 180 000 DH.";
+            } else if (qLower.includes("cnss") || qLower.includes("plafond")) {
+              answer = "La cotisation CNSS prestations sociales est fixée à 4.48% et plafonnée à un Salaire Brut Imposable de 6 000 DH mensuels (soit un prélèvement max de 268.80 DH/mois). L'AMO est de 2.26% non plafonné.";
+            } else if (qLower.includes("charge") || qLower.includes("famille")) {
+              answer = "Sous la LF 2025/2026, la déduction pour charges de famille passe à 500 DH/an par personne à charge (41.67 DH/mois), plafonnée à 6 personnes (max 3 000 DH/an).";
+            } else if (qLower.includes("foncier") || qLower.includes("loyer")) {
+              answer = "Les revenus fonciers bénéficient d'un abattement de 40% au régime de déclaration. Le taux d'imposition est de 10% (<120k DH) ou 15% (>=120k DH). La cession d'habitation principale occupée au moins 5 ans (<=4 MDH) est exonérée de TPI.";
+            }
+
+            const botMsg = {
+              id: (Date.now() + 1).toString(),
+              sender: "bot",
+              text: answer,
+              timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            };
+            setMessages((prev) => [...prev, botMsg]);
+          }, 400);
+        };
+
+        return (
+          <div className="space-y-6 max-w-4xl mx-auto">
+            <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FF5F1F]">
+              <h2 className="text-xl font-black text-[#FF5F1F] flex items-center gap-2">
+                <Icons.Sparkles className="w-6 h-6" />
+                <span>Assistant AI Fiscale Maroc (Mode Off-line Autonome)</span>
+              </h2>
+              <p className="text-xs text-white/80 font-bold mt-1">Base de connaissances intégrée CGI & Jurisprudence marocaine</p>
+            </div>
+
+            <div className="bg-white rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#000] overflow-hidden flex flex-col h-[500px]">
+              <div className="flex-1 p-6 overflow-y-auto space-y-4 bg-slate-50">
+                {messages.map((m) => (
+                  <div key={m.id} className={`flex items-start space-x-3 ${m.sender === "user" ? "flex-row-reverse space-x-reverse" : ""}`}>
+                    <div className={`w-8 h-8 rounded-xl flex items-center justify-center font-black shrink-0 border-2 border-black ${m.sender === "user" ? "bg-[#FF5F1F]" : "bg-[#FFD700]"}`}>
+                      {m.sender === "user" ? <Icons.User className="w-4 h-4" /> : <Icons.Bot className="w-4 h-4" />}
+                    </div>
+                    <div className={`max-w-[80%] p-3.5 rounded-2xl text-xs font-bold border-2 border-black ${m.sender === "user" ? "bg-black text-white" : "bg-white text-black"}`}>
+                      {m.text}
+                      <span className="block text-[9px] text-right opacity-60 mt-1">{m.timestamp}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="p-3 bg-slate-100 border-t-2 border-black flex gap-2 overflow-x-auto">
+                <button onClick={() => handleSend("Quel est le nouveau barème IR 2026 ?")} className="bg-white border-2 border-black text-black text-[11px] font-bold px-3 py-1 rounded-xl whitespace-nowrap">
+                  Barème IR 2026 ?
+                </button>
+                <button onClick={() => handleSend("Comment est plafonnée la CNSS ?")} className="bg-white border-2 border-black text-black text-[11px] font-bold px-3 py-1 rounded-xl whitespace-nowrap">
+                  Plafond CNSS ?
+                </button>
+                <button onClick={() => handleSend("Combien rapporte la déduction pour charges de famille ?")} className="bg-white border-2 border-black text-black text-[11px] font-bold px-3 py-1 rounded-xl whitespace-nowrap">
+                  Charges de famille ?
+                </button>
+              </div>
+
+              <div className="p-3 bg-white border-t-2 border-black flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Posez votre question fiscale..."
+                  value={inputPrompt}
+                  onChange={(e) => setInputPrompt(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                  className="flex-1 p-2.5 border-2 border-black rounded-xl text-xs font-bold"
+                />
+                <button
+                  onClick={() => handleSend()}
+                  className="bg-[#FF5F1F] text-black p-2.5 rounded-xl border-2 border-black shadow-[2px_2px_0px_0px_#000] cursor-pointer"
+                >
+                  <Icons.Send className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Exercises Component
+      function ExercisesSection() {
+        return (
+          <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="bg-black text-white p-6 rounded-3xl border-3 border-black shadow-[6px_6px_0px_0px_#FFD700]">
+              <h2 className="text-xl font-black text-[#FFD700] flex items-center gap-2">
+                <Icons.FileText className="w-6 h-6" />
+                <span>20 Cas Pratiques Corrigés & Exercices d'Application CGI 2026</span>
+              </h2>
+              <p className="text-xs text-white/80 font-bold mt-1">Exercices pas à pas pour étudiants, comptables, RH et fiscalistes</p>
+            </div>
+            <div className="bg-white p-6 rounded-3xl border-3 border-black shadow-[5px_5px_0px_0px_#000] text-xs font-bold space-y-3">
+              <p className="text-sm font-black text-black">Cas N°1 : Calcul IR sur Salaire d'un Cadre (Cas Standard)</p>
+              <p className="text-slate-700">M. Alami perçoit un salaire de base mensuel de 12 000 DH, une prime d'ancienneté de 1 200 DH et une indemnité de transport de 500 DH. Solution : SBI = 13 200 DH | CNSS = 268.80 DH | AMO = 298.32 DH | FP = 2 916.67 DH | SNI = 9 716.21 DH | IR Net = 1 470.18 DH | Net à Payer = 11 662.70 DH.</p>
+            </div>
+          </div>
+        );
+      }
+
+      // Printable Pay Slip Modal
+      function PaySlipModal({ data, onClose }) {
+        if (!data) return null;
+        const { input, output } = data;
+
+        return (
+          <div onClick={onClose} className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto cursor-pointer">
+            <div onClick={(e) => e.stopPropagation()} id="printable-payslip" className="bg-white w-full max-w-3xl rounded-3xl border-4 border-black shadow-[8px_8px_0px_0px_#000] overflow-hidden my-8 cursor-default">
+              <div className="bg-black text-white px-6 py-4 flex items-center justify-between border-b-4 border-black print:hidden">
+                <h3 className="font-black text-sm text-[#FFD700] flex items-center gap-2">
+                  <Icons.FileText className="w-5 h-5" />
+                  <span>Bulletin de Paie Officiel Explicatif</span>
+                </h3>
+                <div className="flex items-center space-x-2">
+                  <button onClick={() => window.print()} className="px-3 py-1.5 text-black bg-[#E0FF2E] border-2 border-black rounded-xl font-black text-xs shadow-[2px_2px_0px_0px_#000]">
+                    <Icons.Printer className="w-4 h-4 inline mr-1" /> Imprimer
+                  </button>
+                  <button onClick={onClose} className="px-3 py-1.5 text-black bg-[#FF45F5] border-2 border-black rounded-xl font-black text-xs shadow-[2px_2px_0px_0px_#000]">
+                    Fermer
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-8 space-y-6">
+                <div className="flex justify-between items-start border-b-2 border-black pb-4">
+                  <div>
+                    <h2 className="text-2xl font-black uppercase tracking-wide">Bulletin de Paie</h2>
+                    <p className="text-xs font-bold text-slate-600">Période: Mois de Janvier 2026 | Régime CGI & LF 2025/2026 Maroc</p>
+                  </div>
+                  <div className="text-right text-xs font-bold">
+                    <p className="font-black text-sm">Salarié: MATRICULE 042</p>
+                    <p>Situation Famille: {input.familyDependents} personne(s) à charge</p>
+                  </div>
+                </div>
+
+                <table className="w-full text-xs font-bold border-2 border-black">
+                  <thead className="bg-black text-white font-black">
+                    <tr>
+                      <th className="p-2.5 text-left">Éléments de Paie</th>
+                      <th className="p-2.5 text-center">Gains (DH)</th>
+                      <th className="p-2.5 text-center">Retenues (DH)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black">
+                    <tr>
+                      <td className="p-2.5 font-black">Salaire de Base</td>
+                      <td className="p-2.5 text-center">{input.baseSalary.toFixed(2)}</td>
+                      <td className="p-2.5 text-center">-</td>
+                    </tr>
+                    {input.exemptAllowances > 0 && (
+                      <tr>
+                        <td className="p-2.5 italic">Indemnités Exonérées (Transport/Panier)</td>
+                        <td className="p-2.5 text-center">{input.exemptAllowances.toFixed(2)}</td>
+                        <td className="p-2.5 text-center">-</td>
+                      </tr>
+                    )}
+                    <tr>
+                      <td className="p-2.5">Cotisation CNSS (4.48%)</td>
+                      <td className="p-2.5 text-center">-</td>
+                      <td className="p-2.5 text-center text-rose-600">{output.cnssContribution.toFixed(2)}</td>
+                    </tr>
+                    <tr>
+                      <td className="p-2.5">Cotisation AMO (2.26%)</td>
+                      <td className="p-2.5 text-center">-</td>
+                      <td className="p-2.5 text-center text-rose-600">{output.amoContribution.toFixed(2)}</td>
+                    </tr>
+                    <tr className="bg-amber-50">
+                      <td className="p-2.5 font-black">Impôt sur le Revenu Net (IR Net)</td>
+                      <td className="p-2.5 text-center">-</td>
+                      <td className="p-2.5 text-center text-emerald-700 font-black">{output.irNetMonthly.toFixed(2)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+
+                <div className="grid grid-cols-3 gap-4 p-4 bg-[#E0FF2E] rounded-2xl border-2 border-black font-black text-center shadow-[4px_4px_0px_0px_#000]">
+                  <div>
+                    <span className="text-[10px] block uppercase text-slate-700">Salaire Brut Global</span>
+                    <span className="text-sm">{output.salaryBrut.toFixed(2)} DH</span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] block uppercase text-slate-700">Total Retenues</span>
+                    <span className="text-sm text-rose-600">{output.employeeTotalDeductions.toFixed(2)} DH</span>
+                  </div>
+                  <div className="bg-black text-[#E0FF2E] p-2 rounded-xl border border-black">
+                    <span className="text-[10px] block uppercase">Net à Payer</span>
+                    <span className="text-base font-black">{output.salaryNetToPay.toFixed(2)} DH</span>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t-2 border-black flex justify-between items-center text-[10px] font-bold text-slate-500">
+                  <p>Document conforme au Code Général des Impôts Marocain (LF 2025/2026).</p>
+                  <button onClick={onClose} className="px-4 py-2 bg-black text-white font-black rounded-xl border border-black print:hidden">
+                    Fermer
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // --- MAIN APP ENTRY ---
+      function App() {
+        const [activeTab, setActiveTab] = useState("salary");
+        const [paySlipData, setPaySlipData] = useState(null);
+
+        return (
+          <div className="min-h-screen flex flex-col bg-[#FEFCE8]">
+            <Header activeTab={activeTab} setActiveTab={setActiveTab} />
+
+            <main className="flex-1 p-4 md:p-8 max-w-7xl mx-auto w-full">
+              {activeTab === "salary" && <SalarySimulator onGeneratePaySlip={(data) => setPaySlipData(data)} />}
+              {activeTab === "bareme" && <BaremeComparison />}
+              {activeTab === "foncier" && <FoncierSimulator />}
+              {activeTab === "cpu" && <CPUSimulator />}
+              {activeTab === "rgi" && <RGISimulator />}
+              {activeTab === "exercises" && <ExercisesSection />}
+              {activeTab === "guide" && <CGIGuide />}
+              {activeTab === "quiz" && <QuizSection />}
+              {activeTab === "ai" && <AiAdvisor />}
+            </main>
+
+            {paySlipData && (
+              <PaySlipModal data={paySlipData} onClose={() => setPaySlipData(null)} />
+            )}
+
+            <footer className="bg-black text-white p-6 border-t-4 border-black text-center text-xs font-bold mt-12">
+              <p className="text-[#FFD700] font-black text-sm">Simulateur & Calculateur d'Impôt sur le Revenu - CGI Maroc 2026</p>
+              <p className="text-white/70 mt-1">Application autonome 100% côté client conforme LF 2025/2026</p>
+            </footer>
+          </div>
+        );
+      }
+
+      // Render React App
+      const rootElement = document.getElementById("root");
+      const root = ReactDOM.createRoot(rootElement);
+      root.render(<App />);
+    </script>
   </body>
 </html>
-
